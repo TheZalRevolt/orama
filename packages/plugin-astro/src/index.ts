@@ -62,19 +62,23 @@ async function prepareOramaDb(
   })
 
   // All routes are in the same folder, we can use the first one to get the basePath
-  const basePath = routes[0].distURL?.pathname?.replace(/\/$/, '').split('dist/')[0] + 'dist/'
+  var tempDir =  routes[0].distURL?.pathname?.replace(/\/$/, '').split('dist/')[0] + 'dist/'
+  console.log("errore 2: " + tempDir);
+  const basePath = tempDir.charAt(0) === '/' ? tempDir.slice(1).replace('/', '\\'): tempDir;
+  console.log("errore 2: " + basePath);
   const pathsToBeIndexed = pages
     .filter(({ pathname }) => dbConfig.pathMatcher.test(pathname))
     .map(({ pathname }) => {
       // Some pages like 404 are generated as 404.html while others are usually pageName/index.html
-      const matchingPathname = routes.find(r => r.distURL?.pathname.endsWith(pathname.replace(/\/$/, '') + '.html'))
+      var matchingPathname = routes.find(r => r.distURL?.pathname.endsWith(pathname.replace(/\/$/, '') + '.html'))
         ?.distURL?.pathname
+      matchingPathname = matchingPathname?.charAt(0) === '/' ? matchingPathname.slice(1).replace('/', '\\') : matchingPathname
       return {
         pathname,
         generatedFilePath: matchingPathname ?? `${basePath}${pathname}index.html`
       }
     })
-    .filter(({ generatedFilePath }) => !!generatedFilePath)
+    .filter(({ generatedFilePath }) => !!generatedFilePath) 
 
   const oramaDB = await createOramaDB({
     schema: defaultSchema,
@@ -113,7 +117,13 @@ export function createPlugin(options: Record<string, OramaOptions>): AstroIntegr
         config = cfg
       },
       'astro:build:done': async function ({ pages, routes }: AstroBuildDoneArgs): Promise<void> {
-        const assetsDir = joinPath(config.outDir.pathname, 'assets')
+        // const assetsDir = joinPath(config.outDir.pathname, 'assets')
+        var tempDir = joinPath(config.outDir.pathname, 'assets');
+        console.log(tempDir);
+        const assetsDir = tempDir.charAt(0) === '\\' ? tempDir.slice(1): tempDir;
+        // .replace(/\\/g, '\\\\') 
+        console.log(assetsDir);
+
         if (!existsSync(assetsDir)) {
           mkdirSync(assetsDir)
         }
